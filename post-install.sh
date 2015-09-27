@@ -367,7 +367,7 @@ echo
 	service php5-fpm restart > /dev/null
 
 # Installation de Moodle
-	php $dossier_moodle_systeme/admin/cli/install.php --allow-unstable --non-interactive --lang=fr --wwwroot=http://$urldusite --dataroot=$dossier_moodledata --dbname=$compte_moodle --dbpass=$compte_db_moodle_mdp --fullname=$compte_moodle --shortname=$compte_moodle --adminuser=admin_symetrix --adminpass=symetrix --adminemail=$email_demandeur --agree-license
+	php $dossier_moodle_systeme/admin/cli/install.php --allow-unstable --non-interactive --lang=fr --wwwroot=http://$urldusite --dataroot=$dossier_moodledata --dbname=$compte_moodle --dbuser=$compte_moodle --dbpass=$compte_db_moodle_mdp --fullname=$compte_moodle --shortname=$compte_moodle --adminuser=admin_symetrix --adminpass=symetrix --adminemail=$email_demandeur --agree-license
 
 # Envoie des informations par email
 	body="- Email du demandeur : $email_demandeur
