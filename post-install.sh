@@ -31,7 +31,7 @@ paquets_apache="apache2-mpm-worker libapache2-mod-php5 libapache2-mod-fastcgi "
 paquets_mysql="mysql-server mysql-client "
 paquets_php="php5-mysqlnd php5-curl php5-xmlrpc php5-gd php5-intl php5-fpm php5-memcached "
 paquets_email="ssmtp "
-paquets_securite="pwgen fail2ban rkhunter apticron unattended-upgrades "
+paquets_securite="fail2ban rkhunter apticron unattended-upgrades "
 liste_paquets="$paquets_ssh $paquets_editeur $paquet_gestion $paquets_stats $paquets_administration $paquets_apache $paquets_php $paquets_mysql $paquets_email $paquets_securite"
 
 # --------------------------------------------------------------
@@ -156,6 +156,8 @@ echo
 			protocole='http https'
 		;;
 	esac
+
+	apt-get install -y pwgen > /dev/null
 
 # Définition du compte
 	compte_moodle=`echo $urldusite | cut -f1 -d.`
