@@ -229,8 +229,8 @@ echo
 	fi
 
 # Configuration de MySQL avant installation
-	debconf-set-selections <<< 'mysql-server mysql-server/root_password password $compte_db_root_mdp'
-	debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password $compte_db_root_mdp'
+	debconf-set-selections <<< "mysql-server mysql-server/root_password password $compte_db_root_mdp"
+	debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $compte_db_root_mdp"
 
 # Installation des paquets de base
 	echo "Installation des paquets :"
@@ -335,6 +335,11 @@ echo
 
 	a2ensite http-$urldusite.conf
 
+
+# Configuration de php5-fpm
+	cp conf/php5-fpm.conf /etc/apache2/mods-available/php5-fpm.conf
+	cp conf/php5-fpm.load /etc/apache2/mods-available/php5-fpm.load
+
 	a2dismod mpm_prefork
 	a2enmod php5-fpm fastcgi actions mpm_worker
 	service apache2 restart
@@ -343,11 +348,10 @@ echo
 	mysql -u root -p"$compte_db_root_mdp" -e "CREATE DATABASE $compte_moodle; GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY 'compte_db_moodle_mdp';"
 
 # Configuration de l'upload php5-fpm
-	sed -i -e 's/upload_max_filesize = 8M/upload_max_filesize = 256M/' /etc/php5/fpm/php.ini
+	sed -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 256M/' /etc/php5/fpm/php.ini
 	sed -i -e 's/post_max_size = 8M/post_max_size = 256M/' /etc/php5/fpm/php.ini
 
 	service php5-fpm restart
-
 
 # Envoie des informations par email
 	body="- Email du demandeur : $email_demandeur
