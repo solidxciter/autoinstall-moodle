@@ -319,7 +319,7 @@ echo
 
 # Changement des propriétaires des dossiers
 	echo -n "- Changement des propriétaires des dossiers $dossier_moodle_racine : "
-	if chown -R $compte_moodle:www-data $dossier_moodle_racine/* ; then
+	if chown -R www-data: $dossier_moodle_racine/* ; then
 		cecho "[OK]" green
 	else
 		cecho "[BAD]" red
@@ -369,6 +369,30 @@ echo
 # Installation de Moodle
 	php $dossier_moodle_systeme/admin/cli/install.php --allow-unstable --non-interactive --lang=fr --wwwroot=http://$urldusite --dataroot=$dossier_moodledata --dbname=$compte_moodle --dbuser=$compte_moodle --dbpass=$compte_db_moodle_mdp --fullname=$compte_moodle --shortname=$compte_moodle --adminuser=admin_symetrix --adminpass=symetrix --adminemail=$email_demandeur --agree-license
 
+# Changement des propriétaires des dossiers
+	echo -n "- Changement des propriétaires des dossiers $dossier_moodle_racine : "
+	if chown -R www-data: $dossier_moodle_racine/* ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+# Installation de opcachegui
+	echo -n "- Installation du dossier opcache : "
+	if cp -R apps/opcache /var/www/opcache ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+# Changement des propriétaires des dossiers
+	echo -n "- Changement des propriétaires du dossier opcache : "
+	if chown -R www-data: /var/www/opcache ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
 # Envoie des informations par email
 	body="- Email du demandeur : $email_demandeur
 	- URL du vHost : $urldusite
@@ -388,5 +412,5 @@ echo
 
 # Installation de Ohmyzsh
 	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
-	sed -i -e "s/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/" $HOME/.zshrc
+	sed -i -e "s/robbyrussell/ys/" $HOME/.zshrc
 	usermod -s /usr/bin/zsh $USER
