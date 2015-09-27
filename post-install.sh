@@ -112,48 +112,19 @@ return
 }
 
 # --------------------------------------------------------------
-# Les fonctions de configuration
+# Début du script
 # --------------------------------------------------------------
 
-function mettre-a-jour() { # Fonction qui met à jour les applications et nettoie la base de paquets
-	echo
-	cecho "Mise à jour du système" yellow
-    cecho "---------------------------------------------------------" yellow
-	echo
+echo
+cecho "---------------------------------------------------------" yellow
+cecho "Installation automatique de Moodle" yellow
+cecho "---------------------------------------------------------" yellow
+echo
 
-	apt-get update  && apt-get upgrade -y && apt-get check && apt-get autoclean && apt-get autoremove
-}
-
-function modifier-sources() { # Fonction qui modifie le fichier des sources
-# Sauvegarde le fichier courant des sources. Le numéro final le plus grand et le fichier le plus récent.
-	if ! [ -f /etc/apt/sources.list.old.1 ] ; then
-		cp $fichierSources /etc/apt/sources.list.old.1
-	else
-# Récupère le dernier numéro de version et l'incrémente de 1
-		numero=`ls /etc/apt/sources* | sort -r | head -1 | cut -d. -f4`
-		numero=$(($numero + 1))
-
-		cp $fichierSources /etc/apt/sources.list.old.$numero
-	fi
-
-	echo "deb http://ftp.fr.debian.org/debian/ jessie main contrib non-free" > $fichierSources
-	echo "deb-src http://ftp.fr.debian.org/debian/ jessie main contrib non-free" >> $fichierSources
-	echo "deb http://security.debian.org/ jessie/updates main contrib non-free" >> $fichierSources
-	echo "deb-src http://security.debian.org/ jessie/updates main contrib non-free" >> $fichierSources
-	echo "deb http://ftp.fr.debian.org/debian/ jessie-updates main" >> $fichierSources
-	echo "deb-src http://ftp.fr.debian.org/debian/ jessie-updates main" >> $fichierSources
-}
-
-# --------------------------------------------------------------
-# Les fonctions d'installation
-# --------------------------------------------------------------
-function installer-moodle() { # Fonction qui installe la dernière version de Moodle
-
-# Affichage de la bannière
-	echo
-	cecho "Installation de Moodle" yellow
-    cecho "---------------------------------------------------------" yellow
-	echo
+echo
+cecho "Utilitaire de configuration" yellow
+cecho "---------------------------------------------------------" yellow
+echo
 
 # Adresse email du demandeur
 	echo -n "Entrer votre adresse e-mail (les informations de connexions vous seront envoyées) : "
@@ -222,6 +193,33 @@ function installer-moodle() { # Fonction qui installe la dernière version de Mo
 		;;
 	esac
 
+# Sauvegarde le fichier courant des sources. Le numéro final le plus grand et le fichier le plus récent.
+	if ! [ -f /etc/apt/sources.list.old.1 ] ; then
+		cp $fichierSources /etc/apt/sources.list.old.1
+	else
+# Récupère le dernier numéro de version et l'incrémente de 1
+		numero=`ls /etc/apt/sources* | sort -r | head -1 | cut -d. -f4`
+		numero=$(($numero + 1))
+
+		cp $fichierSources /etc/apt/sources.list.old.$numero
+	fi
+
+# Modification du fichier des sources
+	echo -n "- Modification du fichier sources.list : "
+	if cat conf/sources.list > /etc/apt/sources.list ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+# Mise à jour du système
+	echo -n "- Mise à jour du Système : "
+	if apt-get update > /dev/null && apt-get upgrade -y > /dev/null && apt-get check > /dev/null && apt-get autoclean > /dev/null && apt-get autoremove > /dev/null ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
 # Création de l'utilisateur Moodle
 	echo -n "- Création du compte $compte_moodle : "
 	if useradd $compte_moodle ; then
@@ -283,222 +281,4 @@ function installer-moodle() { # Fonction qui installe la dernière version de Mo
 
 # Création de la base de données et attribution des droits
 	mysql -u root -p"$compte_db_root_mdp" -e "CREATE DATABASE $compte_moodle; GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY 'compte_db_moodle_mdp';"
-}
 
-# --------------------------------------------------------------
-# Installation du shell ZSH
-# --------------------------------------------------------------
-
-function installer-ohmyzsh() {
-# Récupération de la source
-	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
-
-# Modification du thème
-	sed -i -e "s/robbyrussell/ys/g" $HOME/.zshrc
-
-# Modification du shell pour l'utilisateur courant
-	usermod -s /usr/bin/zsh $USER
-}
-
-# --------------------------------------------------------------
-# Installation d'Apache
-# --------------------------------------------------------------
-
-function installer-apache() { # Fonction qui installe Apache2 en mode mpm_worker
-	echo
-	cecho "Installation de Apache2" yellow
-    cecho "---------------------------------------------------------" yellow
-	echo
-	apt-get install -y $paquets_apache
-	activer-worker
-}
-
-function installer-fastcgi() { # Fonction qui installe le mod_fastcgi dans Apache2
-	modifier-sources
-	mettre-a-jour
-
-	apt-get install -y libapache2-mod-fastcgi
-
-# Installation des fichiers de configuration
-	cat conf/php5-fpm.conf > /etc/apache2/mods-available/php5-fpm.conf
-	cat conf/php5-fpm.load > /etc/apache2/mods-available/php5-fpm.load
-
-# Activation du module dans Apache
-	a2dismod php5
-	a2enmod php5-fpm fastcgi actions
-}
-
-function installer-php5 () { # Fonction qui installe l'ensemble des mods php utiles à Moodle
-# Installation des paquets nécessaire à Moodle
-	apt-get install -y libapache2-mod-php5 php5-fpm php5-mysqlnd php5-curl php5-xmlrpc php5-gd php5-intl
-
-# Installation de module fastcgi pour Apache
-	installer-fastcgi
-
-# Réactive le mpm-worker (peut rebasculer en prefork)
-	activer-worker
-}
-
-# --------------------------------------------------------------
-# Installation de MySQL
-# --------------------------------------------------------------
-
-function installer-mysql () { # Fonction qui installe le serveur et le client MySQL
-	debconf-set-selections <<< 'mysql-server mysql-server/root_password password $compte_db_root_mdp'
-	debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password $compte_db_root_mdp'
-	apt-get -y install $paquets_mysql
-}
-
-# --------------------------------------------------------------
-# Installation de SSMTP
-# --------------------------------------------------------------
-
-function installer-sendmail() { # Fonction qui installe un client mail
-	apt-get install -y $paquets_email
-}
-
-function installer-lamp() {
-	echo "Installation des paquets :"
-
-	for paquet in $liste_paquets ; do
-		echo -n "- $paquet : "
-		if apt-get install -y $paquet > /dev/null ; then
-			cecho "[OK]" green
-		else
-			cecho "[BAD]" red
-		fi
-	done
-}
-
-function activer-worker() { # Fonction qui active le mod mpm_worker dans Apache2
-	a2dismod mpm_prefork
-	a2enmod mpm_worker
-	service apache2 restart
-}
-
-# --------------------------------------------------------------
-# Les fonction de déinstallation
-# --------------------------------------------------------------
-
-function desinstaller-apache() { # Fonction qui désinstalle Apache2
-	echo
-    cecho "Dénstallation de Apache" yellow
-    cecho "---------------------------------------------------------" yellow
-	apt-get autoremove --purge --yes $paquets_apache
-}
-
-function desinstaller-mysql() { # Fonction qui désinstalle MySQL
-	echo
-    cecho "Dénstallation de MySQL" yellow
-    cecho "---------------------------------------------------------" yellow
-    apt-get autoremove --purge --yes $paquets_mysql
-}
-
-function desinstaller-php5() { # Fonction qui désinstalle php5
-	echo
-    cecho "Dénstallation de PHP" yellow
-    cecho "---------------------------------------------------------" yellow
-    apt-get autoremove --purge--yes $paquets_php
-}
-
-function desinstaller-sendmail() { # Fonction qui désinstalle sendmail
-	echo
-    cecho "Dénstallation de SSMTP" yellow
-    cecho "---------------------------------------------------------" yellow
-    apt-get autoremove --purge --yes $paquets_email
-}
-
-function desinstaller-lamp() { # Fonction qui désinstalle LAMP
-
-    echo
-    cecho "Dénstallation du serveur LAMP" yellow
-    cecho "---------------------------------------------------------" yellow
-
-    apt-get autoremove --purge --yes $liste_paquets
-}
-
-# --------------------------------------------------------------
-# L'exécution du script
-# --------------------------------------------------------------
-
-case "$1" in
-	-iz)
-		installer-ohmyzsh
-	;;
-	-test)
-		modifier-sources
-	;;
-	-maj)
-		mettre-a-jour
-	;;
-	-ia)
-		installer-apache
-	;;
-	-ic)
-		# Affichage de la bannière
-		echo
-		cecho "Installation de fastcgi" yellow
-	    cecho "---------------------------------------------------------" yellow
-		echo
-
-		installer-fastcgi
-	;;
-	-im)
-		# Affichage de la bannière
-		echo
-		cecho "Installation de MySQL" yellow
-	    cecho "---------------------------------------------------------" yellow
-		echo
-
-		installer-mysql
-	;;
-	-ip)
-		# Affichage de la bannière
-		echo
-		cecho "Installation de php5" yellow
-	    cecho "---------------------------------------------------------" yellow
-		echo
-
-		installer-php5
-	;;
-	-is)
-		# Affichage de la bannière
-		echo
-		cecho "Installation de SendMail" yellow
-	    cecho "---------------------------------------------------------" yellow
-		echo
-
-		installer-sendmail
-	;;
-	-il)
-		# Affichage de la bannière
-		echo
-		cecho "---------------------------------------------------------" yellow
-		cecho "Installation d'un serveur LAMP Moodle" yellow
-	    cecho "---------------------------------------------------------" yellow
-		echo
-
-		modifier-sources
-		#mettre-a-jour
-		installer-lamp
-		installer-moodle
-	;;
-	-da)
-		desinstaller-apache
-	;;
-	-dc)
-		desinstaller-fastcgi
-	;;
-	-dm)
-		desinstaller-mysql
-	;;
-	-dp)
-		desinstaller-php5
-	;;
-	-ds)
-		desinstaller-sendmail
-	;;
-	-dl)
-		desinstaller-lamp
-	;;
-esac
