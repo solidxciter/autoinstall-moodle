@@ -243,11 +243,6 @@ echo
 			cecho "[BAD]" red
 		fi
 	done
-
-# Installation de Ohmyzsh
-	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
-	sed -i -e "s/robbyrussell/ys/g" $HOME/.zshrc
-	usermod -s /usr/bin/zsh $USER
 	
 # Configuration de VIM
 	echo -n "- Configuration de VIM : "
@@ -336,7 +331,6 @@ echo
 
 	a2ensite http-$urldusite.conf
 
-
 # Configuration de php5-fpm
 	cp conf/php5-fpm.conf /etc/apache2/mods-available/php5-fpm.conf
 	cp conf/php5-fpm.load /etc/apache2/mods-available/php5-fpm.load
@@ -371,3 +365,8 @@ echo
 	- Mot de passe de l'utilisateur base de donnée : $compte_db_moodle_mdp"
 
 	echo $body | mail -s "`hostname` : $urldusite installé !" $email_demandeur
+
+# Installation de Ohmyzsh
+	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
+	sed -i -e "s/robbyrussell/ys/g" $HOME/.zshrc
+	usermod -s /usr/bin/zsh $USER
