@@ -9,17 +9,14 @@
 # --------------------------------------------------------------
 
 # A FAIRE
-# - Configurer apticron
-# - Configurer unattended-upgrades
 # - Configurer opcache
 # - Installer phpmemcached
 # - Configurer SMTP Moodle
 # - Configurer memcached Moodle
 # - Installer RG Supervision
 # - Configurer iptables
-# - Installation version spécifique moodle
 # - Configurer apache selon protocole
-# - Instalaltion clamav
+# - Configuration clamav Moodle
 
 # --------------------------------------------------------------
 # Les variables
@@ -287,6 +284,13 @@ echo
 	echo
 	cecho "Compte et arborescence Moodle :" yellow
 
+# Configuration de apticron
+	sed -i -e 's/EMAIL="root"/EMAIL="'"$email_demandeur"'"/' /etc/apticron/apticron.conf
+	sed -i -e 's/# SYSTEM="foobar.example.com"/SYSTEM="'"$urldusite - `hostname`"'"/' /etc/apticron/apticron.conf
+
+# Configuration de unattended-upgrade
+	sed -i -e 's///Unattended-Upgrade::Mail "root";Unattended-Upgrade::Mail "'"$email_demandeur"'";/' /etc/apt/apt.conf.d/50unattended-upgrades
+
 # Création de l'utilisateur Moodle
 	echo -n "- Création du compte $compte_moodle : "
 	if useradd $compte_moodle ; then
@@ -442,5 +446,3 @@ echo
 	else
 		cecho "[BAD]" red
 	fi
-	
-	
