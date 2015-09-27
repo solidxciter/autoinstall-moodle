@@ -233,7 +233,8 @@ echo
 	debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $compte_db_root_mdp"
 
 # Installation des paquets de base
-	echo "Installation des paquets :"
+	echo
+	cecho "Installation des paquets :" yellow
 	for paquet in $liste_paquets ; do
 		echo -n "- $paquet : "
 		if apt-get install -y $paquet > /dev/null ; then
@@ -340,12 +341,13 @@ echo
 	cp conf/php5-fpm.conf /etc/apache2/mods-available/php5-fpm.conf
 	cp conf/php5-fpm.load /etc/apache2/mods-available/php5-fpm.load
 
-	a2dismod mpm_prefork
+	a2dismod php5 mpm_prefork
 	a2enmod php5-fpm fastcgi actions mpm_worker
 	service apache2 restart
 
 # Création de la base de données et attribution des droits
-	mysql -u root -p"$compte_db_root_mdp" -e "CREATE DATABASE $compte_moodle; GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY 'compte_db_moodle_mdp';"
+	mysql -u root -p"$compte_db_root_mdp" -e "CREATE DATABASE $compte_moodle;"
+	mysql -u root -p"$compte_db_root_mdp" -e "GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY 'compte_db_moodle_mdp';"
 
 # Configuration de l'upload php5-fpm
 	sed -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 256M/' /etc/php5/fpm/php.ini
