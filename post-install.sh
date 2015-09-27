@@ -8,6 +8,15 @@
 #
 # --------------------------------------------------------------
 
+# A FAIRE
+# - Configurer apticron
+# - Configurer unattended-upgrades
+# - Configurer opcache
+# - Installer opcachegui
+# - Installer phpmemcached
+# - Configurer SMTP Moodle
+# - Configurer memcached Moodle
+
 # --------------------------------------------------------------
 # Les variables
 # --------------------------------------------------------------
@@ -353,7 +362,7 @@ echo
 
 # Création de la base de données et attribution des droits
 	mysql -u root -p"$compte_db_root_mdp" -e "CREATE DATABASE $compte_moodle;"
-	mysql -u root -p"$compte_db_root_mdp" -e "GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY $compte_db_moodle_mdp;"
+	mysql -u root -p"$compte_db_root_mdp" -e "GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY "$compte_db_moodle_mdp";"
 
 # Configuration de l'upload php5-fpm
 	sed -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 256M/' /etc/php5/fpm/php.ini
@@ -379,7 +388,7 @@ echo
 	echo $body | mail -s "`hostname` : $urldusite installé !" $email_demandeur
 
 # Installation de Moodle
-	php $dossier_moodle_systeme/admin/cli/install.php --non-interactive --lang=fr --wwwroot="$urldusite" --dataroot="$dossier_moodledata" --dbname="$compte_moodle" --dbpass="$compte_db_moodle_mdp" --fullname="$compte_moodle" --shortname="$compte_moodle" --adminuser="admin_symetrix" --adminpass="symetrix" --adminemail=$email_demandeur --agree-license
+	php $dossier_moodle_systeme/admin/cli/install.php --non-interactive --lang=fr --wwwroot="$urldusite" --dataroot="http://$dossier_moodledata" --dbname="$compte_moodle" --dbpass="$compte_db_moodle_mdp" --fullname="$compte_moodle" --shortname="$compte_moodle" --adminuser="admin_symetrix" --adminpass="symetrix" --adminemail=$email_demandeur --agree-license
 
 # Installation de Ohmyzsh
 	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
