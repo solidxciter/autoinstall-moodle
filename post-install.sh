@@ -384,4 +384,4 @@ echo
 	usermod -s /usr/bin/zsh $USER
 
 # Installation de Moodle
-	php /var/www/moodle-ei/moodle/admin/cli/install.php --non-interactive --lang=fr --wwwroot="$urldusite" --dataroot="$dossier_moodledata" --dbname="$compte_moodle" --dbpass="$compte_db_moodle_mdp" --fullname="$compte_moodle" --shortname="$compte_moodle" --adminuser="admin_symetrix" --adminpass="symetrix" --adminemail=$email_demandeur --agree-license
+	php $dossier_moodle_systeme/admin/cli/install.php --non-interactive --lang=fr --wwwroot="$urldusite" --dataroot="$dossier_moodledata" --dbname="$compte_moodle" --dbpass="$compte_db_moodle_mdp" --fullname="$compte_moodle" --shortname="$compte_moodle" --adminuser="admin_symetrix" --adminpass="symetrix" --adminemail=$email_demandeur --agree-license
