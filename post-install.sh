@@ -9,11 +9,11 @@
 # --------------------------------------------------------------
 
 # A FAIRE
-# - Configurer opcache
-# - Installer phpmemcached
 # - Configurer memcached Moodle
 # - Configurer iptables
 # - Configurer apache selon protocole
+# - Sécuriser accès opcachedgui
+# - Sécuriser accès phpmemcached
 
 # --------------------------------------------------------------
 # Les variables
@@ -356,6 +356,7 @@ echo
 
 # Configuration du vHost Apache
 	cp conf/moodle-http.conf /etc/apache2/sites-available/http-$urldusite.conf
+	sed -i -e 's/email_demandeur/'"$email_demandeur"'/' /etc/apache2/sites-available/http-$urldusite.conf
 	sed -i -e 's/urldusite/'"$urldusite"'/' /etc/apache2/sites-available/http-$urldusite.conf
 	sed -i -e 's/dossier_moodle_racine/'"$compte_moodle"'/' /etc/apache2/sites-available/http-$urldusite.conf
 	
@@ -366,6 +367,10 @@ echo
 	fi
 
 	a2ensite http*-$urldusite.conf
+
+# Sécurisation d'Apache
+	sed -i -e 's/ServerTokens OS/ServerTokens Prod/' /etc/apache2/conf-available/security.conf
+	sed -i -e 's/ServerSignature On/ServerSignature Off/' /etc/apache2/conf-available/security.conf
 
 # Configuration de php5-fpm
 	cp conf/php5-fpm.conf /etc/apache2/mods-available/php5-fpm.conf
@@ -384,9 +389,16 @@ echo
 	sed -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 256M/' /etc/php5/fpm/php.ini
 	sed -i -e 's/post_max_size = 8M/post_max_size = 256M/' /etc/php5/fpm/php.ini
 
+# Configuration de OpCache
+	sed -i -e 's/;opcache.enable=0/opcache.enable=1/' /etc/php5/fpm/php.ini
+	sed -i -e 's/;opcache.memory_consumption=64/opcache.memory_consumption=250/' /etc/php5/fpm/php.ini
+	sed -i -e 's/;;opcache.interned_strings_buffer=4/opcache.interned_strings_buffer=20/' /etc/php5/fpm/php.ini
+	sed -i -e 's/;opcache.max_accelerated_files=2000/opcache.max_accelerated_files=5000/' /etc/php5/fpm/php.ini
+	sed -i -e 's/;opcache.error_log=/opcache.error_log="/var/log/opcache.err.log"/' /etc/php5/fpm/php.ini
+
 	service php5-fpm restart > /dev/null
 
-# Installation de Moodle
+# Installation automatique de Moodle
 	php $dossier_moodle_systeme/admin/cli/install.php --allow-unstable --non-interactive --lang=fr --wwwroot=http://$urldusite --dataroot=$dossier_moodledata --dbname=$compte_moodle --dbuser=$compte_moodle --dbpass=$compte_db_moodle_mdp --fullname=$compte_moodle --shortname=$compte_moodle --adminuser=admin_symetrix --adminpass=symetrix --adminemail=$email_demandeur --agree-license
 
 # Changement des propriétaires des dossiers
@@ -405,9 +417,25 @@ echo
 		cecho "[BAD]" red
 	fi
 
-# Changement des propriétaires des dossiers
-	echo -n "- Changement des propriétaires du dossier opcache : "
+# Changement des propriétaires des dossiers opcachegui
+	echo -n "- Changement du propriétaire du dossier opcache : "
 	if chown -R www-data: /var/www/opcache ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+# Installation de phpmemcached
+	echo -n "- Installation du dossier phpmemcached : "
+	if cp -R apps/phpmemcached /var/www/phpmemcached ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+# Changement des propriétaires des dossiers phpmemcached
+	echo -n "- Changement du propriétaire du dossier phpmemcached : "
+	if chown -R www-data: /var/www/phpmemcached ; then
 		cecho "[OK]" green
 	else
 		cecho "[BAD]" red
@@ -450,7 +478,7 @@ echo
 	- Utilisateur de la base de donnée : $compte_moodle
 	- Mot de passe de l'utilisateur base de donnée : $compte_db_moodle_mdp"
 
-	echo $body | mail -s "$urldusite est maintenant prêt !" $email_demandeur
+	echo $body | mail -s "$urldusite est prêt !" $email_demandeur
 
 # Installation de Ohmyzsh
 	echo -n "- Installation de Ohmyzsh : "
