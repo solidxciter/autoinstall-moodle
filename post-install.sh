@@ -378,10 +378,10 @@ echo
 
 	echo $body | mail -s "`hostname` : $urldusite installé !" $email_demandeur
 
+# Installation de Moodle
+	php $dossier_moodle_systeme/admin/cli/install.php --non-interactive --lang=fr --wwwroot="$urldusite" --dataroot="$dossier_moodledata" --dbname="$compte_moodle" --dbpass="$compte_db_moodle_mdp" --fullname="$compte_moodle" --shortname="$compte_moodle" --adminuser="admin_symetrix" --adminpass="symetrix" --adminemail=$email_demandeur --agree-license
+
 # Installation de Ohmyzsh
 	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
 	sed -i -e "s/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/" $HOME/.zshrc
 	usermod -s /usr/bin/zsh $USER
-
-# Installation de Moodle
-	php $dossier_moodle_systeme/admin/cli/install.php --non-interactive --lang=fr --wwwroot="$urldusite" --dataroot="$dossier_moodledata" --dbname="$compte_moodle" --dbpass="$compte_db_moodle_mdp" --fullname="$compte_moodle" --shortname="$compte_moodle" --adminuser="admin_symetrix" --adminpass="symetrix" --adminemail=$email_demandeur --agree-license
