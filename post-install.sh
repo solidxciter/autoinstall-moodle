@@ -11,11 +11,9 @@
 # A FAIRE
 # - Configurer opcache
 # - Installer phpmemcached
-# - Configurer SMTP Moodle
 # - Configurer memcached Moodle
 # - Configurer iptables
 # - Configurer apache selon protocole
-# - Configuration clamav Moodle
 
 # --------------------------------------------------------------
 # Les variables
@@ -401,7 +399,7 @@ echo
 
 # Installation de opcachegui
 	echo -n "- Installation du dossier opcache : "
-	if cp -R apps/opcache /var/www/opcache/* ; then
+	if cp -R apps/opcache /var/www/opcache ; then
 		cecho "[OK]" green
 	else
 		cecho "[BAD]" red
@@ -419,6 +417,23 @@ echo
 	echo "*/15 * * * * /usr/bin/php $dossier_moodle_systeme/admin/cli/cron.php > /dev/null" > /var/spool/cron/crontabs/www-data
 	chown www-data:crontab /var/spool/cron/crontabs/www-data
 	chmod 600 /var/spool/cron/crontabs/www-data
+
+# Configuration de forcelogin
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='1' WHERE name='forcelogin'"
+
+# Configuration de CLAMAV
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='1' WHERE name='runclamonupload'"
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='/usr/bin/clamscan' WHERE name='pathtoclam'"
+
+# Configuration de DU
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='/usr/bin/du' WHERE name='pathtodu'"
+
+# Configuration SMTP dans Moodle
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='smtp.gmail.com:587' WHERE name='smtphosts'" 
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='tls' WHERE name='smtpsecure'" 
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='no-reply@symetrix.fr' WHERE name='smtpuser'"
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='N0ReplySym' WHERE name='smtppass'"
+	mysql -u $compte_moodle -p$compte_db_moodle_mdp $compte_moodle -e "UPDATE mdl_config SET value='10' WHERE name='smtpmaxbulk'"
 
 # Envoie des informations par email
 	body="- Email du demandeur : $email_demandeur
