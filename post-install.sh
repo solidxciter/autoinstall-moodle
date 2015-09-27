@@ -12,11 +12,14 @@
 # - Configurer apticron
 # - Configurer unattended-upgrades
 # - Configurer opcache
-# - Installer opcachegui
 # - Installer phpmemcached
 # - Configurer SMTP Moodle
 # - Configurer memcached Moodle
 # - Installer RG Supervision
+# - Configurer iptables
+# - Installation version spécifique moodle
+# - Configurer apache selon protocole
+# - Instalaltion clamav
 
 # --------------------------------------------------------------
 # Les variables
@@ -33,10 +36,11 @@ paquet_gestion="ntpdate "
 paquets_stats="htop nmon logwatch iotop "
 paquets_apache="apache2-mpm-worker libapache2-mod-php5 libapache2-mod-fastcgi "
 paquets_mysql="mysql-server mysql-client "
+paquets_cache="memcached "
 paquets_php="php5-mysqlnd php5-curl php5-xmlrpc php5-gd php5-intl php5-fpm php5-memcached "
 paquets_email="ssmtp "
-paquets_securite="fail2ban rkhunter apticron unattended-upgrades "
-liste_paquets="$paquets_ssh $paquets_editeur $paquet_gestion $paquets_stats $paquets_administration $paquets_apache $paquets_php $paquets_mysql $paquets_email $paquets_securite"
+paquets_securite="fail2ban clamav rkhunter apticron unattended-upgrades "
+liste_paquets="$paquets_ssh $paquets_editeur $paquet_gestion $paquets_stats $paquets_administration $paquets_apache $paquets_cache $paquets_php $paquets_mysql $paquets_email $paquets_securite"
 
 # --------------------------------------------------------------
 # Gestion de la couleur
@@ -324,12 +328,27 @@ echo
 	else
 		cecho "[BAD]" red
 	fi
-	
-	echo
-	cecho "Récupération des sources github :" yellow
 
-# Récupération de la source Moodle	
-	git clone https://github.com/moodle/moodle.git $dossier_moodle_systeme
+# Installation de la source Moodle
+	if [ -f ./moodle-*.tgz ] ; then
+		echo
+		cecho "Installation des sources depuis `ls moodle-*.tgz` :" yellow
+		tar xfz ./moodle-*.tgz
+
+		if mv moodle $dossier_moodle_systeme ; then
+			cecho "[OK]" green
+		else
+			cecho "[BAD]" red
+		fi
+	else
+		echo
+		cecho "Récupération des sources github :" yellow
+		if git clone https://github.com/moodle/moodle.git $dossier_moodle_systeme ; then
+			cecho "[OK]" green
+		else
+			cecho "[BAD]" red
+		fi
+	fi
 
 	echo
 	cecho "Configuration de Apache et php5-fpm :" yellow
@@ -379,7 +398,7 @@ echo
 
 # Installation de opcachegui
 	echo -n "- Installation du dossier opcache : "
-	if cp -R apps/opcache /var/www/opcache ; then
+	if cp -R apps/opcache /var/www/opcache/* ; then
 		cecho "[OK]" green
 	else
 		cecho "[BAD]" red
@@ -392,6 +411,11 @@ echo
 	else
 		cecho "[BAD]" red
 	fi
+
+# Configuration du cron
+	echo "*/15 * * * * /usr/bin/php $dossier_moodle_systeme/admin/cli/cron.php > /dev/null" > /var/spool/cron/crontabs/www-data
+	chown www-data:crontab /var/spool/cron/crontabs/www-data
+	chmod 600 /var/spool/cron/crontabs/www-data
 
 # Envoie des informations par email
 	body="- Email du demandeur : $email_demandeur
@@ -411,6 +435,12 @@ echo
 	echo $body | mail -s "$urldusite est maintenant prêt !" $email_demandeur
 
 # Installation de Ohmyzsh
-	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
-	sed -i -e "s/robbyrussell/ys/" $HOME/.zshrc
-	usermod -s /usr/bin/zsh $USER
+	echo -n "- Installation de Ohmyzsh : "
+	if sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -); exit" > /dev/null ; then
+		cecho "[OK]" green
+		sed -i -e "s/robbyrussell/ys/" $HOME/.zshrc
+	else
+		cecho "[BAD]" red
+	fi
+	
+	
