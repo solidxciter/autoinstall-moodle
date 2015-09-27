@@ -13,7 +13,6 @@
 # - Installer phpmemcached
 # - Configurer SMTP Moodle
 # - Configurer memcached Moodle
-# - Installer RG Supervision
 # - Configurer iptables
 # - Configurer apache selon protocole
 # - Configuration clamav Moodle
@@ -289,7 +288,7 @@ echo
 	sed -i -e 's/# SYSTEM="foobar.example.com"/SYSTEM="'"$urldusite - `hostname`"'"/' /etc/apticron/apticron.conf
 
 # Configuration de unattended-upgrade
-	sed -i -e 's///Unattended-Upgrade::Mail "root";Unattended-Upgrade::Mail "'"$email_demandeur"'";/' /etc/apt/apt.conf.d/50unattended-upgrades
+	sed -i -e 's/Unattended-Upgrade::Mail "root";/Unattended-Upgrade::Mail "'"$email_demandeur"'";/' /etc/apt/apt.conf.d/50unattended-upgrades
 
 # Création de l'utilisateur Moodle
 	echo -n "- Création du compte $compte_moodle : "
@@ -339,7 +338,7 @@ echo
 		cecho "Installation des sources depuis `ls moodle-*.tgz` :" yellow
 		tar xfz ./moodle-*.tgz
 
-		if mv moodle $dossier_moodle_systeme ; then
+		if mv moodle/* $dossier_moodle_systeme ; then
 			cecho "[OK]" green
 		else
 			cecho "[BAD]" red
