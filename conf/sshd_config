@@ -73,3 +73,7 @@ AcceptEnv LANG LC_*
 
 Subsystem sftp /usr/lib/openssh/sftp-server
 UsePAM yes
+
+Match Group sftp
+    	ChrootDirectory /var/www/$h
+    	ForceCommand internal-sftp

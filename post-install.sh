@@ -25,13 +25,14 @@ fichierLog='log/postinstall.log'
 # Gestion des paquets
 paquets_ssh="openssh-client openssh-server "
 paquets_editeur="nano vim git zsh "
-paquets_stats="htop nmon logwatch "
+paquet_gestion="ntpdate "
+paquets_stats="htop nmon logwatch iotop "
 paquets_apache="apache2-mpm-worker libapache2-mod-php5 libapache2-mod-fastcgi "
 paquets_mysql="mysql-server mysql-client "
-paquets_php="php5 php5-mysqlnd php5-curl php5-xmlrpc php5-gd php5-intl php5-fpm "
+paquets_php="php5-mysqlnd php5-curl php5-xmlrpc php5-gd php5-intl php5-fpm php5-memcached "
 paquets_email="ssmtp "
 paquets_securite="pwgen fail2ban rkhunter apticron unattended-upgrades "
-liste_paquets="$paquets_ssh $paquets_editeur $paquets_stats $paquets_administration $paquets_apache $paquets_php $paquets_email $paquets_securite"
+liste_paquets="$paquets_ssh $paquets_editeur $paquet_gestion $paquets_stats $paquets_administration $paquets_apache $paquets_php $paquets_mysql $paquets_email $paquets_securite"
 
 # --------------------------------------------------------------
 # Gestion de la couleur
@@ -183,6 +184,7 @@ echo
 	echo "- Utilisateur de la base de donnée : $compte_moodle"
 	echo "- Mot de passe de l'utilisateur base de donnée : $compte_db_moodle_mdp"
 	echo
+
 # Confirmation des variables par l'utilisateur
 	echo "Souhaitez-vous continuer ? [o/n] "
 	read choix
@@ -193,11 +195,15 @@ echo
 		;;
 	esac
 
+	echo
+	cecho "Début de l'installation" yellow
+	cecho "---------------------------------------------------------" yellow
+	echo
+
 # Sauvegarde le fichier courant des sources. Le numéro final le plus grand et le fichier le plus récent.
 	if ! [ -f /etc/apt/sources.list.old.1 ] ; then
 		cp $fichierSources /etc/apt/sources.list.old.1
 	else
-# Récupère le dernier numéro de version et l'incrémente de 1
 		numero=`ls /etc/apt/sources* | sort -r | head -1 | cut -d. -f4`
 		numero=$(($numero + 1))
 
@@ -219,6 +225,55 @@ echo
 	else
 		cecho "[BAD]" red
 	fi
+
+# Configuration de MySQL avant installation
+	debconf-set-selections <<< 'mysql-server mysql-server/root_password password $compte_db_root_mdp'
+	debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password $compte_db_root_mdp'
+
+# Installation des paquets de base
+	echo "Installation des paquets :"
+	for paquet in $liste_paquets ; do
+		echo -n "- $paquet : "
+		if apt-get install -y $paquet > /dev/null ; then
+			cecho "[OK]" green
+		else
+			cecho "[BAD]" red
+		fi
+	done
+
+# Installation de Ohmyzsh
+	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
+	sed -i -e "s/robbyrussell/ys/g" $HOME/.zshrc
+	usermod -s /usr/bin/zsh $USER
+	
+# Configuration de VIM
+	echo -n "- Configuration de VIM : "
+	if cat conf/.vimrc > $HOME/.vimrc ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+# Configuration de SSMTP
+	echo -n "- Configuration de SSMTP : "
+	if cat conf/ssmtp.conf > /etc/ssmtp/ssmtp.conf ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+	hostname=`hostname`
+	sed -i -e 's/nom_hote/'"$hostname"'/' /etc/ssmtp/ssmtp.conf
+
+	echo -n "- Configuration de revaliases : "
+	if cat conf/revaliases > /etc/ssmtp/revaliases ; then
+		cecho "[OK]" green
+	else
+		cecho "[BAD]" red
+	fi
+
+# Test d'envoie d'e-mail
+	echo `hostname` : Mail ok ! | mail -s "test d'envoi d'email depuis `hostname`" $email_demandeur
 
 # Création de l'utilisateur Moodle
 	echo -n "- Création du compte $compte_moodle : "
@@ -277,8 +332,34 @@ echo
 	fi
 
 	a2ensite http-$urldusite.conf
+
+	a2dismod mpm_prefork
+	a2enmod php5-fpm fastcgi actions mpm_worker
 	service apache2 restart
 
 # Création de la base de données et attribution des droits
 	mysql -u root -p"$compte_db_root_mdp" -e "CREATE DATABASE $compte_moodle; GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY 'compte_db_moodle_mdp';"
 
+# Configuration de l'upload php5-fpm
+	sed -i -e 's/upload_max_filesize = 8M/upload_max_filesize = 256M/' /etc/php5/fpm/php.ini
+	sed -i -e 's/post_max_size = 8M/post_max_size = 256M/' /etc/php5/fpm/php.ini
+
+	service php5-fpm restart
+
+
+# Envoie des informations par email
+	body="- Email du demandeur : $email_demandeur
+	- URL du vHost : $urldusite
+	- Protocole utilisé : $protocole
+	- Compte système Moodle : $compte_moodle
+	- Mot de passe du compte système Moodle : $compte_moodle_mdp
+	- Dossier d'installation racine : $dossier_moodle_racine
+	- Dossier système Moodle : $dossier_moodle_systeme
+	- Dossier data Moodle : $dossier_moodledata
+	- Compte root base de données : root
+	- Mot de passe du compte root base de données : $compte_db_root_mdp
+	- Nom de la base de données : $compte_moodle
+	- Utilisateur de la base de donnée : $compte_moodle
+	- Mot de passe de l'utilisateur base de donnée : $compte_db_moodle_mdp"
+
+	echo $body | mail -s "`hostname` : $urldusite installé !" $email_demandeur
