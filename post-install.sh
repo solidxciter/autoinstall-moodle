@@ -244,6 +244,9 @@ echo
 		fi
 	done
 	
+	echo
+	cecho "Configuration des paquets :" yellow
+
 # Configuration de VIM
 	echo -n "- Configuration de VIM : "
 	if cat conf/.vimrc > $HOME/.vimrc ; then
@@ -272,6 +275,9 @@ echo
 
 # Test d'envoie d'e-mail
 	echo `hostname` : Mail ok ! | mail -s "test d'envoi d'email depuis `hostname`" $email_demandeur
+
+	echo
+	cecho "Compte et arborescence Moodle :" yellow
 
 # Création de l'utilisateur Moodle
 	echo -n "- Création du compte $compte_moodle : "
@@ -315,8 +321,14 @@ echo
 		cecho "[BAD]" red
 	fi
 	
+	echo
+	cecho "Récupération des sources github :" yellow
+
 # Récupération de la source Moodle	
 	git clone https://github.com/moodle/moodle.git $dossier_moodle_systeme
+
+	echo
+	cecho "Configuration de Apache et php5-fpm :" yellow
 
 # Configuration du vHost Apache
 	cp conf/moodle-http.conf /etc/apache2/sites-available/http-$urldusite.conf
@@ -341,7 +353,7 @@ echo
 
 # Création de la base de données et attribution des droits
 	mysql -u root -p"$compte_db_root_mdp" -e "CREATE DATABASE $compte_moodle;"
-	mysql -u root -p"$compte_db_root_mdp" -e "GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY 'compte_db_moodle_mdp';"
+	mysql -u root -p"$compte_db_root_mdp" -e "GRANT ALL PRIVILEGES ON $compte_moodle.* TO $compte_moodle@'%' IDENTIFIED BY $compte_db_moodle_mdp;"
 
 # Configuration de l'upload php5-fpm
 	sed -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 256M/' /etc/php5/fpm/php.ini
@@ -368,5 +380,8 @@ echo
 
 # Installation de Ohmyzsh
 	sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
-	sed -i -e "s/robbyrussell/ys/g" $HOME/.zshrc
+	sed -i -e "s/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/" $HOME/.zshrc
 	usermod -s /usr/bin/zsh $USER
+
+# Installation de Moodle
+	php /var/www/moodle-ei/moodle/admin/cli/install.php --non-interactive --lang=fr --wwwroot="$urldusite" --dataroot="$dossier_moodledata" --dbname="$compte_moodle" --dbpass="$compte_db_moodle_mdp" --fullname="$compte_moodle" --shortname="$compte_moodle" --adminuser="admin_symetrix" --adminpass="symetrix" --adminemail=$email_demandeur --agree-license
